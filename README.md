@@ -2,10 +2,6 @@
 
 This repo provisions ESP-IDF, ESP-Matter, and Android build prerequisites (Linux). It is structured for easy extension with roles and custom modules.
 
-## License
-
-MIT. See `LICENSE`.
-
 ```mermaid
 flowchart TD
   A[site.yml] --> B[roles/esp_idf]
