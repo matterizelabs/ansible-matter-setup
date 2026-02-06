@@ -31,4 +31,4 @@
     chdir: "{{ esp_install_dir_expanded }}/esp-matter"
     executable: /bin/bash
   environment:
-    IDF_TOOLS_PATH: "{{ idf_tools_path }}"
+    IDF_TOOLS_PATH: "{{ esp_idf_tools_path }}"

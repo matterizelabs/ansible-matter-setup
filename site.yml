@@ -19,4 +19,4 @@
     - role: esp_idf
     - role: esp_matter
     - role: android_matter
-      when: android_setup_enabled | bool
+      when: android_matter_setup_enabled | bool

@@ -48,7 +48,7 @@
     preflight_mount: "{{ item }}"
   loop: "{{ ansible_facts.mounts }}"
   when:
-    - esp_install_dir_expanded[: item.mount | length] == item.mount
+    - esp_install_dir_expanded.startswith(item.mount)
     - item.mount | length > preflight_mount.mount | length
 
 - name: Assert sufficient disk space
@@ -57,7 +57,8 @@
       - (preflight_mount.size_available | float / 1024 / 1024) >= preflight_min_disk_mb
     fail_msg: >-
       Not enough disk space on {{ preflight_mount.mount }}.
-      Required: {{ preflight_min_disk_mb }} MB, available: {{ (preflight_mount.size_available | float / 1024 / 1024) | round(0) }} MB.
+      Required: {{ preflight_min_disk_mb }} MB,
+      available: {{ (preflight_mount.size_available | float / 1024 / 1024) | round(0) }} MB.
 
 - name: Assert sufficient memory
   ansible.builtin.assert:
