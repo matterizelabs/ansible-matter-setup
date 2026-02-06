@@ -4,24 +4,39 @@ name: ci
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - ".github/workflows/ci.yml"
-      - "ansible.cfg"
-      - ".ansible-lint"
-      - ".yamllint"
-      - ".pre-commit-config.yaml"
-      - "playbook.yml"
-      - "site.yml"
-      - "group_vars/**"
-      - "host_vars/**"
-      - "inventory*.yml"
-      - "roles/**"
-      - "collections/**"
-      - "scripts/**"
-      - "pyproject.toml"
+      - "**"
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      ansible: ${{ steps.filter.outputs.ansible }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ansible:
+              - ".github/workflows/ci.yml"
+              - "ansible.cfg"
+              - ".ansible-lint"
+              - ".yamllint"
+              - ".pre-commit-config.yaml"
+              - "playbook.yml"
+              - "site.yml"
+              - "group_vars/**"
+              - "host_vars/**"
+              - "inventory*.yml"
+              - "roles/**"
+              - "collections/**"
+              - "scripts/**"
+              - "pyproject.toml"
+
   lint:
     runs-on: ${{ matrix.os }}
+    needs: [changes]
+    if: needs.changes.outputs.ansible == 'true'
     concurrency:
       group: ci-${{ github.workflow }}-lint-${{ matrix.os }}-${{ github.ref }}
       cancel-in-progress: true
@@ -46,6 +61,8 @@ jobs:
 
   dry-run:
     runs-on: ${{ matrix.os }}
+    needs: [changes]
+    if: needs.changes.outputs.ansible == 'true'
     concurrency:
       group: ci-${{ github.workflow }}-dry-run-${{ matrix.os }}-${{ github.ref }}
       cancel-in-progress: true
@@ -65,3 +82,17 @@ jobs:
         run: ansible-galaxy collection install -r collections/requirements.yml
       - name: Dry run esp-idf and esp-matter
         run: ansible-playbook -i inventory.ci.yml site.yml --check --limit localhost --tags esp_idf,esp_matter
+
+  ci:
+    runs-on: ubuntu-latest
+    needs: [changes, lint, dry-run]
+    if: always()
+    steps:
+      - name: Check required jobs
+        run: |
+          echo "changes=${{ needs.changes.result }}"
+          echo "lint=${{ needs.lint.result }}"
+          echo "dry-run=${{ needs.dry-run.result }}"
+          if [ "${{ needs.lint.result }}" = "failure" ] || [ "${{ needs.dry-run.result }}" = "failure" ]; then
+            exit 1
+          fi
