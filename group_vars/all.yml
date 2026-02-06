@@ -5,16 +5,16 @@ esp_idf_targets:
   - "esp32"
 esp_matter_repo: "https://github.com/espressif/esp-matter.git"
 esp_matter_ref: "main"
-idf_tools_path: "{{ ansible_env.HOME }}/.espressif"
+esp_idf_tools_path: "{{ ansible_env.HOME }}/.espressif"
 
-android_setup_enabled: true
-android_sdk_root: "{{ ansible_env.HOME }}/Android/Sdk"
-android_ndk_version: "28.2.13676358"
-android_sdk_api_level: "34"
-android_cmdline_tools_version: "10.0"
-android_kotlin_version: "2.1.10"
-android_kotlin_install_dir: "/usr/lib/kotlinc"
-android_java_home: ""
+android_matter_setup_enabled: true
+android_matter_sdk_root: "{{ ansible_env.HOME }}/Android/Sdk"
+android_matter_ndk_version: "28.2.13676358"
+android_matter_sdk_api_level: "34"
+android_matter_cmdline_tools_version: "10.0"
+android_matter_kotlin_version: "2.1.10"
+android_matter_kotlin_install_dir: "/usr/lib/kotlinc"
+android_matter_java_home: ""
 
 preflight_min_disk_mb: 10240
 preflight_min_mem_mb: 4096

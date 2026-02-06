@@ -61,13 +61,14 @@ ansible-playbook site.yml \
 - `esp_install_dir` (prompted, default `~/.esp`)
 - `esp_idf_version`
 - `esp_idf_targets`
+- `esp_idf_tools_path`
 - `esp_matter_ref`
-- `android_setup_enabled`
-- `android_sdk_root`
-- `android_ndk_version`
-- `android_sdk_api_level`
-- `android_cmdline_tools_version`
-- `android_kotlin_version`
+- `android_matter_setup_enabled`
+- `android_matter_sdk_root`
+- `android_matter_ndk_version`
+- `android_matter_sdk_api_level`
+- `android_matter_cmdline_tools_version`
+- `android_matter_kotlin_version`
 - `preflight_min_disk_mb`
 - `preflight_min_mem_mb`
 - `preflight_allow_overwrite`
@@ -117,4 +118,4 @@ This provides `ansible`, `ansible-lint`, `yamllint`, `prek`, `uv`, and `python3`
 
 ## Notes
 
-- Android SDK Command Line Tools must already be installed under `{{ android_sdk_root }}` for the Android role to proceed.
+- Android SDK Command Line Tools must already be installed under `{{ android_matter_sdk_root }}` for the Android role to proceed.

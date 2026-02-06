@@ -10,19 +10,22 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        pythonPkgs = pkgs.python3Packages;
+        prekPkg = if pythonPkgs ? prek then pythonPkgs.prek else null;
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            ansible
-            ansible-lint
-            yamllint
-            prek
-            uv
-            python3
-            git
-            wget
-          ];
+          packages =
+            (with pkgs; [
+              ansible
+              ansible-lint
+              yamllint
+              uv
+              python3
+              git
+              wget
+            ])
+            ++ pkgs.lib.optional (prekPkg != null) prekPkg;
         };
       });
 }

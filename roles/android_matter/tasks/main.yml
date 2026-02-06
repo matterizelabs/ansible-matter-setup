@@ -36,14 +36,16 @@
   ansible.builtin.shell: |
     set -euo pipefail
     tmp_dir="$(mktemp -d)"
-    wget -q -O "$tmp_dir/kotlin.zip" "https://github.com/JetBrains/kotlin/releases/download/v{{ android_kotlin_version }}/kotlin-compiler-{{ android_kotlin_version }}.zip"
-    rm -rf "{{ android_kotlin_install_dir }}"
+    kotlin_url="https://github.com/JetBrains/kotlin/releases/download/v{{ android_matter_kotlin_version }}/"
+    kotlin_url="${kotlin_url}kotlin-compiler-{{ android_matter_kotlin_version }}.zip"
+    wget -q -O "$tmp_dir/kotlin.zip" "$kotlin_url"
+    rm -rf "{{ android_matter_kotlin_install_dir }}"
     unzip -q "$tmp_dir/kotlin.zip" -d /usr/lib
     rm -rf "$tmp_dir"
-    rm -f "{{ android_kotlin_install_dir }}/bin/"*.bat
+    rm -f "{{ android_matter_kotlin_install_dir }}/bin/"*.bat
   args:
     executable: /bin/bash
-    creates: "{{ android_kotlin_install_dir }}/bin/kotlinc"
+    creates: "{{ android_matter_kotlin_install_dir }}/bin/kotlinc"
   when: ansible_system == "Linux"
 
 - name: Detect JAVA_HOME for Android builds
@@ -55,40 +57,43 @@
 
 - name: Set JAVA_HOME fact
   ansible.builtin.set_fact:
-    android_java_home: "{{ (java_path.stdout | dirname | dirname) if (java_path.rc == 0) else '' }}"
+    android_matter_java_home: >-
+      {{ (java_path.stdout | dirname | dirname) if (java_path.rc == 0) else '' }}
   when: ansible_system == "Linux"
 
 - name: Detect sdkmanager
   ansible.builtin.stat:
     path: "{{ item }}"
   loop:
-    - "{{ android_sdk_root }}/cmdline-tools/latest/bin/sdkmanager"
-    - "{{ android_sdk_root }}/cmdline-tools/{{ android_cmdline_tools_version }}/bin/sdkmanager"
+    - "{{ android_matter_sdk_root }}/cmdline-tools/latest/bin/sdkmanager"
+    - "{{ android_matter_sdk_root }}/cmdline-tools/{{ android_matter_cmdline_tools_version }}/bin/sdkmanager"
   register: sdkmanager_stats
   when: ansible_system == "Linux"
 
 - name: Select sdkmanager path
   ansible.builtin.set_fact:
-    android_sdkmanager_path: "{{ (sdkmanager_stats.results | selectattr('stat.exists') | map(attribute='item') | first) | default('') }}"
+    android_sdkmanager_path: >-
+      {{ (sdkmanager_stats.results | selectattr('stat.exists') | map(attribute='item') | first) | default('') }}
   when: ansible_system == "Linux"
 
 - name: Fail if sdkmanager is missing
   ansible.builtin.fail:
     msg: >-
       Android SDK Command Line Tools are required but were not found.
-      Install Android Studio and the SDK Command Line Tools ({{ android_cmdline_tools_version }})
-      in {{ android_sdk_root }}, then rerun this playbook.
+      Install Android Studio and the SDK Command Line Tools ({{ android_matter_cmdline_tools_version }})
+      in {{ android_matter_sdk_root }}, then rerun this playbook.
   when: ansible_system == "Linux" and (android_sdkmanager_path | length == 0)
 
 - name: Install Android SDK and NDK packages
   ansible.builtin.shell: |
     set -euo pipefail
     yes | "{{ android_sdkmanager_path }}" --licenses
-    "{{ android_sdkmanager_path }}" --install "platforms;android-{{ android_sdk_api_level }}" "ndk;{{ android_ndk_version }}"
+    "{{ android_sdkmanager_path }}" --install \
+      "platforms;android-{{ android_matter_sdk_api_level }}" "ndk;{{ android_matter_ndk_version }}"
   args:
     executable: /bin/bash
   environment:
-    ANDROID_HOME: "{{ android_sdk_root }}"
+    ANDROID_HOME: "{{ android_matter_sdk_root }}"
   when: ansible_system == "Linux"
 
 - name: Write Android environment helper
@@ -96,11 +101,12 @@
     dest: "{{ esp_install_dir_expanded }}/android-env.sh"
     mode: "0644"
     content: |
-      export ANDROID_HOME="{{ android_sdk_root }}"
-      export ANDROID_NDK_HOME="{{ android_sdk_root }}/ndk/{{ android_ndk_version }}"
-      export KOTLIN_HOME="{{ android_kotlin_install_dir }}"
-      export PATH="$PATH:{{ android_kotlin_install_dir }}/bin:{{ android_sdk_root }}/platform-tools:{{ android_sdk_root }}/cmdline-tools/latest/bin"
-      {% if android_java_home | length > 0 %}
-      export JAVA_HOME="{{ android_java_home }}"
+      export ANDROID_HOME="{{ android_matter_sdk_root }}"
+      export ANDROID_NDK_HOME="{{ android_matter_sdk_root }}/ndk/{{ android_matter_ndk_version }}"
+      export KOTLIN_HOME="{{ android_matter_kotlin_install_dir }}"
+      export PATH="$PATH:{{ android_matter_kotlin_install_dir }}/bin:{{ android_matter_sdk_root }}/platform-tools:\
+      {{ android_matter_sdk_root }}/cmdline-tools/latest/bin"
+      {% if android_matter_java_home | length > 0 %}
+      export JAVA_HOME="{{ android_matter_java_home }}"
       {% endif %}
   when: ansible_system == "Linux"
