@@ -17,7 +17,8 @@
 - name: Checkout connectedhomeip submodules
   ansible.builtin.shell: |
     set -euo pipefail
-    ./scripts/checkout_submodules.py --platform esp32 linux --shallow
+    platform="{{ 'darwin' if ansible_facts['system'] == 'Darwin' else 'linux' }}"
+    ./scripts/checkout_submodules.py --platform esp32 "$platform" --shallow
   args:
     chdir: "{{ esp_install_dir_expanded }}/esp-matter/connectedhomeip/connectedhomeip"
     executable: /bin/bash

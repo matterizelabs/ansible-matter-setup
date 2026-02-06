@@ -31,12 +31,47 @@
     msg: "Unsupported distro for Android build dependencies. Please install JDK 17 and unzip manually."
   when: ansible_facts["os_family"] not in ["Debian", "RedHat", "Archlinux"]
 
+- name: Ensure chip_doc_ref is set
+  ansible.builtin.fail:
+    msg: "chip_doc_ref is required for Android setup (connectedhomeip branch/tag)."
+  when: chip_doc_ref is not defined
+
+- name: Build android_building.md URL
+  ansible.builtin.set_fact:
+    chip_doc_url: >-
+      https://raw.githubusercontent.com/project-chip/connectedhomeip/refs/{{
+      'heads' if chip_upstream_doc_ref_mode == 'branch' else 'tags' }}/{{
+      chip_doc_ref }}/docs/platforms/android/android_building.md
+
+- name: Parse Android dependency versions from connectedhomeip docs
+  ansible.builtin.command: >-
+    python3 {{ playbook_dir }}/scripts/parse_android_deps.py
+    --url {{ chip_doc_url }}
+  register: android_deps_out
+  changed_when: false
+  delegate_to: localhost
+  run_once: true
+
+- name: Set Android dependency facts
+  ansible.builtin.set_fact:
+    android_matter_sdk_api_level: "{{ (android_deps_out.stdout | from_json).android_matter_sdk_api_level }}"
+    android_matter_ndk_version: "{{ (android_deps_out.stdout | from_json).android_matter_ndk_version }}"
+    android_matter_jdk_version: >-
+      {{ (android_deps_out.stdout | from_json).android_matter_jdk_version | default(android_matter_jdk_version) }}
+    android_matter_kotlin_version: >-
+      {{ (android_deps_out.stdout | from_json).android_matter_kotlin_version | default(android_matter_kotlin_version) }}
+    android_matter_cmdline_tools_version: >-
+      {{ (android_deps_out.stdout | from_json).android_matter_cmdline_tools_version
+      | default(android_matter_cmdline_tools_version) }}
+  run_once: true
+
 - name: Install Kotlin compiler
   become: true
   ansible.builtin.shell: |
     set -euo pipefail
     tmp_dir="$(mktemp -d)"
-    kotlin_url="https://github.com/JetBrains/kotlin/releases/download/v{{ android_matter_kotlin_version }}/"
+    kotlin_url="https://github.com/JetBrains/kotlin/releases/download/"
+    kotlin_url="${kotlin_url}v{{ android_matter_kotlin_version }}/"
     kotlin_url="${kotlin_url}kotlin-compiler-{{ android_matter_kotlin_version }}.zip"
     wget -q -O "$tmp_dir/kotlin.zip" "$kotlin_url"
     rm -rf "{{ android_matter_kotlin_install_dir }}"
@@ -47,6 +82,12 @@
     executable: /bin/bash
     creates: "{{ android_matter_kotlin_install_dir }}/bin/kotlinc"
   when: ansible_facts["system"] == "Linux"
+
+- name: Install Android Studio (macOS)
+  community.general.homebrew_cask:
+    name: android-studio
+    state: present
+  when: ansible_facts["system"] == "Darwin"
 
 - name: Detect JAVA_HOME for Android builds
   ansible.builtin.command: readlink -f /usr/bin/java
@@ -101,6 +142,7 @@
     dest: "{{ esp_install_dir_expanded }}/android-env.sh"
     mode: "0644"
     content: |
+      export CHIP_ROOT="{{ chip_install_dir_expanded }}"
       export ANDROID_HOME="{{ android_matter_sdk_root }}"
       export ANDROID_NDK_HOME="{{ android_matter_sdk_root }}/ndk/{{ android_matter_ndk_version }}"
       export KOTLIN_HOME="{{ android_matter_kotlin_install_dir }}"

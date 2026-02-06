@@ -1,0 +1,36 @@
+---
+- name: Validate chip_doc_ref_mode
+  ansible.builtin.assert:
+    that:
+      - chip_upstream_doc_ref_mode in ["branch", "tag"]
+    fail_msg: "chip_upstream_doc_ref_mode must be 'branch' or 'tag'"
+
+- name: List available connectedhomeip refs
+  ansible.builtin.uri:
+    url: >-
+      https://api.github.com/repos/project-chip/connectedhomeip/{{
+      'branches' if chip_upstream_doc_ref_mode == 'branch' else 'tags' }}?per_page=100
+    return_content: true
+  register: chip_ref_list
+  when: chip_doc_ref is not defined
+
+- name: Fail if chip_doc_ref not provided
+  ansible.builtin.fail:
+    msg: >-
+      chip_doc_ref is required. Available {{ chip_upstream_doc_ref_mode }}s:
+      {{ (chip_ref_list.json | map(attribute='name') | list) | join(', ') }}
+      Example: -e chip_doc_ref=<ref>
+  when: chip_doc_ref is not defined
+
+- name: Ensure connectedhomeip install directory exists
+  ansible.builtin.file:
+    path: "{{ chip_install_dir_expanded }}"
+    state: directory
+    mode: "0755"
+
+- name: Clone connectedhomeip
+  ansible.builtin.git:
+    repo: "{{ chip_upstream_repo_url }}"
+    dest: "{{ chip_install_dir_expanded }}"
+    version: "{{ chip_doc_ref }}"
+    recursive: true

@@ -8,12 +8,28 @@
       prompt: "Install directory for ESP-IDF/ESP-Matter"
       default: "~/.esp"
       private: false
+    - name: chip_install_dir
+      prompt: "Install directory for connectedhomeip (upstream)"
+      default: "~/connectedhomeip"
+      private: false
 
   pre_tasks:
     - name: Expand install directory
       ansible.builtin.set_fact:
         esp_install_dir_expanded: >-
           {% set base = esp_install_dir | default('~/.esp') %}
+          {% if base == '~' %}
+          {{ ansible_facts['env']['HOME'] }}
+          {% elif base.startswith('~/') %}
+          {{ ansible_facts['env']['HOME'] ~ base[1:] }}
+          {% else %}
+          {{ base }}
+          {% endif %}
+      tags: ["always"]
+    - name: Expand connectedhomeip directory
+      ansible.builtin.set_fact:
+        chip_install_dir_expanded: >-
+          {% set base = chip_install_dir | default('~/connectedhomeip') %}
           {% if base == '~' %}
           {{ ansible_facts['env']['HOME'] }}
           {% elif base.startswith('~/') %}
@@ -30,6 +46,8 @@
       tags: ["esp_idf"]
     - role: esp_matter
       tags: ["esp_matter"]
+    - role: chip_upstream
+      tags: ["chip_upstream"]
     - role: android_matter
       tags: ["android_matter"]
       when: android_matter_setup_enabled | bool
