@@ -1,0 +1,6 @@
+---
+esp_idf_version: "v5.5.2"
+esp_idf_repo: "https://github.com/espressif/esp-idf.git"
+esp_idf_targets:
+  - "esp32"
+idf_tools_path: "{{ ansible_env.HOME }}/.espressif"

@@ -1,0 +1,88 @@
+---
+- name: Install host packages (Debian/Ubuntu)
+  become: true
+  ansible.builtin.package:
+    name:
+      - git
+      - wget
+      - flex
+      - bison
+      - gperf
+      - python3
+      - python3-pip
+      - python3-venv
+      - cmake
+      - ninja-build
+      - ccache
+      - libffi-dev
+      - libssl-dev
+      - dfu-util
+      - libusb-1.0-0
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install host packages (RedHat/CentOS/Fedora)
+  become: true
+  ansible.builtin.package:
+    name:
+      - git
+      - wget
+      - flex
+      - bison
+      - gperf
+      - python3
+      - cmake
+      - ninja-build
+      - ccache
+      - dfu-util
+      - libusbx
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Install host packages (Arch)
+  become: true
+  ansible.builtin.package:
+    name:
+      - gcc
+      - git
+      - make
+      - flex
+      - bison
+      - gperf
+      - python
+      - cmake
+      - ninja
+      - ccache
+      - dfu-util
+      - libusb
+      - python-pip
+    state: present
+  when: ansible_os_family == "Archlinux"
+
+- name: Fail on unsupported distro
+  ansible.builtin.fail:
+    msg: "Unsupported distro for automatic dependencies. Please install ESP-IDF prerequisites manually and rerun."
+  when: ansible_os_family not in ["Debian", "RedHat", "Archlinux"]
+
+- name: Ensure install directory exists
+  ansible.builtin.file:
+    path: "{{ esp_install_dir_expanded }}"
+    state: directory
+    mode: "0755"
+
+- name: Clone ESP-IDF
+  ansible.builtin.git:
+    repo: "{{ esp_idf_repo }}"
+    dest: "{{ esp_install_dir_expanded }}/esp-idf"
+    version: "{{ esp_idf_version }}"
+    recursive: true
+
+- name: Install ESP-IDF tools
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ./install.sh {{ esp_idf_targets | join(' ') }}
+  args:
+    chdir: "{{ esp_install_dir_expanded }}/esp-idf"
+    executable: /bin/bash
+  environment:
+    IDF_TOOLS_PATH: "{{ idf_tools_path }}"

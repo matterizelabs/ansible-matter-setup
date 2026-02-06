@@ -1,0 +1,77 @@
+---
+- name: Assert supported distro family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ["Debian", "RedHat", "Archlinux"]
+    fail_msg: "Unsupported distro for automatic dependencies. Please install prerequisites manually and rerun."
+
+- name: Ensure install directory exists
+  ansible.builtin.file:
+    path: "{{ esp_install_dir_expanded }}"
+    state: directory
+    mode: "0755"
+
+- name: Check install directory writeability
+  ansible.builtin.tempfile:
+    state: file
+    path: "{{ esp_install_dir_expanded }}"
+  register: preflight_tmpfile
+
+- name: Remove preflight temp file
+  ansible.builtin.file:
+    path: "{{ preflight_tmpfile.path }}"
+    state: absent
+
+- name: Check existing installs
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ esp_install_dir_expanded }}/esp-idf"
+    - "{{ esp_install_dir_expanded }}/esp-matter"
+  register: preflight_install_dirs
+
+- name: Fail if install dir is not empty and overwrite is disabled
+  ansible.builtin.fail:
+    msg: >-
+      One or more install directories already exist. Set preflight_allow_overwrite=true
+      to proceed and overwrite existing installations.
+  when: >-
+    (not preflight_allow_overwrite) and
+    (preflight_install_dirs.results | selectattr('stat.exists') | list | length > 0)
+
+- name: Initialize mount selection
+  ansible.builtin.set_fact:
+    preflight_mount: "{{ (ansible_facts.mounts | selectattr('mount', 'equalto', '/') | list | first) }}"
+
+- name: Select mount for install directory
+  ansible.builtin.set_fact:
+    preflight_mount: "{{ item }}"
+  loop: "{{ ansible_facts.mounts }}"
+  when:
+    - esp_install_dir_expanded[: item.mount | length] == item.mount
+    - item.mount | length > preflight_mount.mount | length
+
+- name: Assert sufficient disk space
+  ansible.builtin.assert:
+    that:
+      - (preflight_mount.size_available | float / 1024 / 1024) >= preflight_min_disk_mb
+    fail_msg: >-
+      Not enough disk space on {{ preflight_mount.mount }}.
+      Required: {{ preflight_min_disk_mb }} MB, available: {{ (preflight_mount.size_available | float / 1024 / 1024) | round(0) }} MB.
+
+- name: Assert sufficient memory
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.memtotal_mb >= preflight_min_mem_mb
+    fail_msg: >-
+      Not enough memory. Required: {{ preflight_min_mem_mb }} MB,
+      available: {{ ansible_facts.memtotal_mb }} MB.
+
+- name: Check network access to required URLs
+  ansible.builtin.uri:
+    url: "{{ item }}"
+    method: HEAD
+    timeout: 10
+    status_code: [200, 301, 302, 403]
+  loop: "{{ preflight_check_urls }}"
+  when: not preflight_skip_network

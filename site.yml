@@ -1,0 +1,22 @@
+---
+- name: Provision ESP-IDF, ESP-Matter, and Android build prerequisites
+  hosts: all
+  gather_facts: true
+
+  vars_prompt:
+    - name: esp_install_dir
+      prompt: "Install directory for ESP-IDF/ESP-Matter"
+      default: "~/.esp"
+      private: false
+
+  pre_tasks:
+    - name: Expand install directory
+      ansible.builtin.set_fact:
+        esp_install_dir_expanded: "{{ esp_install_dir | expanduser }}"
+
+  roles:
+    - role: preflight
+    - role: esp_idf
+    - role: esp_matter
+    - role: android_matter
+      when: android_setup_enabled | bool

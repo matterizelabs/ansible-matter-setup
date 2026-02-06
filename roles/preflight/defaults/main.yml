@@ -1,0 +1,8 @@
+---
+preflight_min_disk_mb: 10240
+preflight_min_mem_mb: 4096
+preflight_allow_overwrite: false
+preflight_skip_network: false
+preflight_check_urls:
+  - "https://github.com"
+  - "https://raw.githubusercontent.com"

@@ -1,0 +1,8 @@
+profile: basic
+exclude_paths:
+  - .venv
+  - .direnv
+  - .mypy_cache
+  - .pytest_cache
+  - .git
+  - .github
