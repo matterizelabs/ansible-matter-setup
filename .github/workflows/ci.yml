@@ -3,6 +3,21 @@ name: ci
 "on":
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - ".github/workflows/ci.yml"
+      - "ansible.cfg"
+      - ".ansible-lint"
+      - ".yamllint"
+      - ".pre-commit-config.yaml"
+      - "playbook.yml"
+      - "site.yml"
+      - "group_vars/**"
+      - "host_vars/**"
+      - "inventory*.yml"
+      - "roles/**"
+      - "collections/**"
+      - "scripts/**"
+      - "pyproject.toml"
 
 jobs:
   lint:
