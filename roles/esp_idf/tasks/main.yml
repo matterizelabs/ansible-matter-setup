@@ -66,16 +66,10 @@
 
 - name: Ensure install directory fact is set
   ansible.builtin.set_fact:
-    esp_install_dir_expanded: >-
-      {% set base = esp_install_dir | default('~/.esp') %}
-      {% if base == '~' %}
-      {{ ansible_facts['env']['HOME'] }}
-      {% elif base.startswith('~/') %}
-      {{ ansible_facts['env']['HOME'] ~ base[1:] }}
-      {% else %}
-      {{ base }}
-      {% endif %}
+    esp_install_dir_expanded: "{{ (ansible_facts['env']['HOME'] if base == '~' else (ansible_facts['env']['HOME'] ~ base[1:]) if base.startswith('~/') else base) }}"
   when: esp_install_dir_expanded is not defined
+  vars:
+    base: "{{ esp_install_dir | default('~/.esp') }}"
 
 - name: Ensure install directory exists
   ansible.builtin.file:

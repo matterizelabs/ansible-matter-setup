@@ -6,13 +6,15 @@ This repo provisions ESP-IDF, ESP-Matter, and Android build prerequisites (Linux
 flowchart TD
   A[site.yml] --> B[roles/esp_idf]
   A --> C[roles/esp_matter]
-  A --> D[roles/android_matter]
-  B --> E[esp-idf install.sh]
-  C --> F[esp-matter install.sh]
-  D --> G[Android SDK/NDK + Kotlin]
-  A --> H[group_vars/all.yml]
-  A --> I[ansible.cfg + inventory.ini]
-  A --> J[plugins/modules]
+  A --> D[roles/chip_upstream]
+  A --> E[roles/android_matter]
+  B --> F[esp-idf install.sh]
+  C --> G[esp-matter install.sh]
+  D --> H[connectedhomeip clone]
+  E --> I[Android SDK/NDK + Kotlin]
+  A --> J[group_vars/all.yml]
+  A --> K[ansible.cfg + inventory.ini]
+  A --> L[plugins/modules]
 ```
 
 ## Structure
@@ -22,7 +24,7 @@ flowchart TD
 - `group_vars/all.yml`: shared defaults
 - `plugins/modules/`: custom modules (optional)
 - `ansible.cfg`: local config
-- `inventory.ini`: local inventory (localhost)
+- `inventory.yml`: local inventory
 
 ## Usage
 
@@ -59,10 +61,13 @@ ansible-playbook site.yml \
 ## Key Variables
 
 - `esp_install_dir` (prompted, default `~/.esp`)
+- `chip_install_dir` (prompted, default `~/connectedhomeip`)
 - `esp_idf_version`
 - `esp_idf_targets`
 - `esp_idf_tools_path`
 - `esp_matter_ref`
+- `chip_doc_ref` (required for Android setup)
+- `chip_upstream_doc_ref_mode` (`branch` or `tag`)
 - `android_matter_setup_enabled`
 - `android_matter_sdk_root`
 - `android_matter_ndk_version`
@@ -109,6 +114,14 @@ nix develop
 ```
 
 This provides `ansible`, `ansible-lint`, `yamllint`, `prek`, `uv`, and `python3`.
+
+## Collections
+
+Install required collections:
+
+```bash
+ansible-galaxy collection install -r collections/requirements.yml
+```
 
 ## Extending
 
